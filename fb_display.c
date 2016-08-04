@@ -262,45 +262,6 @@ int openFB(const char *name)
 
     return fh;
 
-
-	tcgetattr(tty, &term);
-
-	/* checks & initialisation */
-    if (-1 == ioctl(fh,FBIOGET_FSCREENINFO,&fb_fix)) {
-		perror("ioctl FBIOGET_FSCREENINFO");
-		exit(1);
-    }
-    if (fb_fix.type != FB_TYPE_PACKED_PIXELS) {
-		fprintf(stderr,"can handle only packed pixel frame buffers\n");
-
-    }
-
-    page_mask = getpagesize()-1;
-    fb_mem_offset = (unsigned long)(fb_fix.smem_start) & page_mask;
-    fb_mem = (unsigned char*)mmap(NULL,fb_fix.smem_len + fb_mem_offset, PROT_READ|PROT_WRITE, MAP_SHARED, fh, 0);
-
-    if (-1L == (long)fb_mem) {
-		perror("mmap");
-
-    }
-
-    /* move viewport to upper left corner */
-    if (fb_var.xoffset != 0 || fb_var.yoffset != 0) {
-		fb_var.xoffset = 0;
-		fb_var.yoffset = 0;
-	if (-1 == ioctl(fh,FBIOPAN_DISPLAY,&fb_var)) {
-	    perror("ioctl FBIOPAN_DISPLAY");
-	}
-    }
-    if (-1 == ioctl(tty,KDSETMODE, KD_GRAPHICS)) {
-		perror("ioctl KDSETMODE");
-    }
-    fb_activate_current(tty);
-
-    /* cls */
-    fb_memset(fb_mem+fb_mem_offset, 0, fb_fix.line_length * fb_var.yres);
-
-	return fh;
 }
 
 

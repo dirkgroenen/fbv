@@ -294,8 +294,9 @@ identified:
 			else
 				y_offs = 0;
 
-			if(fb_display(i.rgb, i.alpha, i.width, i.height, x_pan, y_pan, x_offs, y_offs))
+			if(fb_display(i.rgb, i.alpha, i.width, i.height, x_pan, y_pan, x_offs, y_offs)){
 				goto error;
+			}
 			refresh = 0;
 		}
 		if(delay)
