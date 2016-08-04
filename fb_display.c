@@ -1,3 +1,5 @@
+#define FB_ACTIVE    0
+
 #include "config.h"
 
 #include <linux/kd.h>
