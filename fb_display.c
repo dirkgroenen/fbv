@@ -39,7 +39,6 @@ static int orig_vt_no = 0;
 static int                       kd_mode;
 static struct vt_mode            vt_omode;
 static struct termios            term;
-static struct fb_var_screeninfo  fb_ovar;
 
 struct fb_fix_screeninfo   fb_fix;
 struct fb_var_screeninfo   fb_var;
@@ -222,8 +221,8 @@ void fb_memset (void *addr, int c, size_t len)
 	    i = (c & 0xff) << 8;
 	    i |= i << 16;
 	    len >>= 2;
-	    //for ((int)p = addr; len--; p++)
-	//		*p = i;
+	    for(p = (unsigned int*)addr; len--; p++)
+	       *p = i;
 	#else
 	    memset(addr, c, len);
 	#endif
