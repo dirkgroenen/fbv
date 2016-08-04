@@ -254,11 +254,13 @@ int openFB(const char *name)
 		exit(1);
     }
 
-	if((fh = open(getenv("FRAMEBUFFER"), O_RDWR)) == -1)
+	if((fh = open(name, O_RDWR)) == -1)
 	{
 		fprintf(stderr, "open %s: %s\n", name, strerror(errno));
 		return -1;
 	}
+
+    return fh;
 
 
 	tcgetattr(tty, &term);
