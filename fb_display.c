@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <linux/kd.h>
 #include <linux/vt.h>
 #include <linux/fb.h>
 #include <sys/types.h>
@@ -7,6 +8,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <asm/types.h>
+#include <termios.h>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -32,6 +34,10 @@ struct fb_cmap map_back = {0, 256, red_b, green_b, blue_b, NULL};
 
 static int tty;
 static int orig_vt_no = 0;
+static int                       kd_mode;
+static struct vt_mode            vt_omode;
+static struct termios            term;
+static struct fb_var_screeninfo  fb_ovar;
 
 int openFB(const char *name);
 void closeFB(int fh);
@@ -159,6 +165,28 @@ static void fb_setvt(int vtno)
 
 }
 
+void fb_cleanup(int fh)
+{
+    /* restore console */
+    if (-1 == ioctl(tty,KDSETMODE, kd_mode))
+		perror("ioctl KDSETMODE");
+
+
+    close(fh);
+
+    if (-1 == ioctl(tty,VT_SETMODE, &vt_omode))
+		perror("ioctl VT_SETMODE");
+
+    if (orig_vt_no && -1 == ioctl(tty, VT_ACTIVATE, orig_vt_no))
+		perror("ioctl VT_ACTIVATE");
+
+    if (orig_vt_no && -1 == ioctl(tty, VT_WAITACTIVE, orig_vt_no))
+		perror("ioctl VT_WAITACTIVE");
+
+    tcsetattr(tty, TCSANOW, &term);
+    close(tty);
+}
+
 int openFB(const char *name)
 {
 	int fh;
@@ -193,7 +221,7 @@ int openFB(const char *name)
 
 void closeFB(int fh)
 {
-	close(fh);
+	fb_cleanup(fh);
 }
 
 void getVarScreenInfo(int fh, struct fb_var_screeninfo *var)
