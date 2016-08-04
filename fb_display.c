@@ -39,6 +39,12 @@ static struct vt_mode            vt_omode;
 static struct termios            term;
 static struct fb_var_screeninfo  fb_ovar;
 
+struct fb_fix_screeninfo   fb_fix;
+struct fb_var_screeninfo   fb_var;
+unsigned char             *fb_mem;
+int			   fb_mem_offset = 0;
+int                        fb_switch_state = FB_ACTIVE;
+
 int openFB(const char *name);
 void closeFB(int fh);
 void getVarScreenInfo(int fh, struct fb_var_screeninfo *var);
@@ -187,10 +193,46 @@ void fb_cleanup(int fh)
     close(tty);
 }
 
+static int fb_activate_current(int tty)
+{
+    struct vt_stat vts;
+
+    if (-1 == ioctl(tty,VT_GETSTATE, &vts)) {
+		perror("ioctl VT_GETSTATE");
+		return -1;
+    }
+    if (-1 == ioctl(tty,VT_ACTIVATE, vts.v_active)) {
+		perror("ioctl VT_ACTIVATE");
+		return -1;
+    }
+    if (-1 == ioctl(tty,VT_WAITACTIVE, vts.v_active)) {
+		perror("ioctl VT_WAITACTIVE");
+		return -1;
+    }
+    return 0;
+}
+
+void fb_memset (void *addr, int c, size_t len)
+{
+	#if 1 /* defined(__powerpc__) */
+	    unsigned int i, *p;
+
+	    i = (c & 0xff) << 8;
+	    i |= i << 16;
+	    len >>= 2;
+	    //for ((int)p = addr; len--; p++)
+	//		*p = i;
+	#else
+	    memset(addr, c, len);
+	#endif
+}
+
 int openFB(const char *name)
 {
 	int fh;
 	char *dev;
+	unsigned long page_mask;
+	int vt = 1;
 
 	struct vt_stat vts;
 
@@ -201,7 +243,9 @@ int openFB(const char *name)
 		else name = DEFAULT_FRAMEBUFFER;
 	}
 
-	fb_setvt(0);
+	tty = 0;
+	if (vt != 0)
+		fb_setvt(vt);
 
 	if (-1 == ioctl(tty,VT_GETSTATE, &vts)) {
 		fprintf(stderr,"ioctl VT_GETSTATE: %s (not a linux console?)\n",
@@ -216,8 +260,46 @@ int openFB(const char *name)
 	}
 
 
+	tcgetattr(tty, &term);
+
+	/* checks & initialisation */
+    if (-1 == ioctl(fh,FBIOGET_FSCREENINFO,&fb_fix)) {
+		perror("ioctl FBIOGET_FSCREENINFO");
+		exit(1);
+    }
+    if (fb_fix.type != FB_TYPE_PACKED_PIXELS) {
+		fprintf(stderr,"can handle only packed pixel frame buffers\n");
+
+    }
+
+    page_mask = getpagesize()-1;
+    fb_mem_offset = (unsigned long)(fb_fix.smem_start) & page_mask;
+    fb_mem = (unsigned char*)mmap(NULL,fb_fix.smem_len + fb_mem_offset, PROT_READ|PROT_WRITE, MAP_SHARED, fh, 0);
+
+    if (-1L == (long)fb_mem) {
+		perror("mmap");
+
+    }
+
+    /* move viewport to upper left corner */
+    if (fb_var.xoffset != 0 || fb_var.yoffset != 0) {
+		fb_var.xoffset = 0;
+		fb_var.yoffset = 0;
+	if (-1 == ioctl(fh,FBIOPAN_DISPLAY,&fb_var)) {
+	    perror("ioctl FBIOPAN_DISPLAY");
+	}
+    }
+    if (-1 == ioctl(tty,KDSETMODE, KD_GRAPHICS)) {
+		perror("ioctl KDSETMODE");
+    }
+    fb_activate_current(tty);
+
+    /* cls */
+    fb_memset(fb_mem+fb_mem_offset, 0, fb_fix.line_length * fb_var.yres);
+
 	return fh;
 }
+
 
 void closeFB(int fh)
 {
