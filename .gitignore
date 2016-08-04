@@ -1,3 +1,6 @@
-*.o
-config.*
+Make.conf
+config.h
+config.log
 fbv
+*.o
+*~

@@ -1,5 +1,22 @@
-#include "config.h"
+/*
+    fbv  --  simple image viewer for the linux framebuffer
+    Copyright (C) 2002  Tomasz Sterna
 
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+#include "config.h"
 #ifdef FBV_SUPPORT_BMP
 #include "fbv.h"
 #include <sys/types.h>
@@ -7,16 +24,15 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define BMP_TORASTER_OFFSET   10
-#define BMP_SIZE_OFFSET       18
-#define BMP_BPP_OFFSET        28
-#define BMP_RLE_OFFSET        30
-#define BMP_COLOR_OFFSET      54
+#define BMP_TORASTER_OFFSET	10
+#define BMP_SIZE_OFFSET		18
+#define BMP_BPP_OFFSET		28
+#define BMP_RLE_OFFSET		30
+#define BMP_COLOR_OFFSET	54
 
 #define fill4B(a)	( ( 4 - ( (a) % 4 ) ) & 0x03)
 
-struct color
-{
+struct color {
 	unsigned char red;
 	unsigned char green;
 	unsigned char blue;
@@ -26,14 +42,19 @@ int fh_bmp_id(char *name)
 {
 	int fd;
 	char id[2];
+	
 	fd = open(name, O_RDONLY);
-	if(fd == -1) return(0);
+	if (fd == -1) {
+		return(0);
+	}
+	
 	read(fd, id, 2);
 	close(fd);
-	if(id[0]=='B' && id[1]=='M') return(1);
+	if ( id[0]=='B' && id[1]=='M' ) {
+		return(1);
+	}
 	return(0);
 }
-
 
 void fetch_pallete(int fd, struct color pallete[], int count)
 {
@@ -41,8 +62,7 @@ void fetch_pallete(int fd, struct color pallete[], int count)
 	int i;
 
 	lseek(fd, BMP_COLOR_OFFSET, SEEK_SET);
-	for (i=0; i<count; i++)
-	{
+	for (i=0; i<count; i++) {
 		read(fd, buff, 4);
 		pallete[i].red = buff[2];
 		pallete[i].green = buff[1];
@@ -51,8 +71,7 @@ void fetch_pallete(int fd, struct color pallete[], int count)
 	return;
 }
 
-
-int fh_bmp_load(char *name, unsigned char *buffer, unsigned char **alpha, int x,int y)
+int fh_bmp_load(char *name,unsigned char *buffer, unsigned char **alpha, int x,int y)
 {
 	int fd, bpp, raster, i, j, k, skip;
 	unsigned char buff[4];
@@ -75,9 +94,8 @@ int fh_bmp_load(char *name, unsigned char *buffer, unsigned char **alpha, int x,
 	}
 	read(fd, buff, 2);
 	bpp = buff[0] + (buff[1]<<8);
-
-	switch (bpp)
-	{
+	
+	switch (bpp){
 		case 1: /* monochrome */
 			skip = fill4B(x/8+(x%8?1:0));
 			lseek(fd, raster, SEEK_SET);
@@ -96,7 +114,7 @@ int fh_bmp_load(char *name, unsigned char *buffer, unsigned char **alpha, int x,
 						}
 						buff[0] = buff[0]<<1;
 					}
-
+					
 				}
 				if (x%8) {
 					read(fd, buff, 1);
@@ -112,7 +130,7 @@ int fh_bmp_load(char *name, unsigned char *buffer, unsigned char **alpha, int x,
 						}
 						buff[0] = buff[0]<<1;
 					}
-
+					
 				}
 				if (skip) {
 					read(fd, buff, skip);
@@ -192,23 +210,26 @@ int fh_bmp_load(char *name, unsigned char *buffer, unsigned char **alpha, int x,
 	close(fd);
 	return(FH_ERROR_OK);
 }
-
 int fh_bmp_getsize(char *name,int *x,int *y)
 {
 	int fd;
 	unsigned char size[4];
 
 	fd = open(name, O_RDONLY);
-	if (fd == -1) return(FH_ERROR_FILE);
-	if (lseek(fd, BMP_SIZE_OFFSET, SEEK_SET) == -1) return(FH_ERROR_FORMAT);
-
+	if (fd == -1) {
+		return(FH_ERROR_FILE);
+	}
+	if (lseek(fd, BMP_SIZE_OFFSET, SEEK_SET) == -1) {
+		return(FH_ERROR_FORMAT);
+	}
+	
 	read(fd, size, 4);
 	*x = size[0] + (size[1]<<8) + (size[2]<<16) + (size[3]<<24);
+//	*x-=1;
 	read(fd, size, 4);
 	*y = size[0] + (size[1]<<8) + (size[2]<<16) + (size[3]<<24);
-
+	
 	close(fd);
 	return(FH_ERROR_OK);
 }
-#endif /*FBV_SUPPORT_BMP*/
-
+#endif

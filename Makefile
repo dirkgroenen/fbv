@@ -3,35 +3,37 @@
 #
 # Makefile for fbv
 
-include Make.conf
+CONF=Make.conf
+-include $(CONF)
 
-CC = g++
-CFLAGS = -Wall -D_GNU_SOURCE
+CC	= gcc 
+CFLAGS  = -O2 -Wall -D_GNU_SOURCE
 
-SOURCES	= main.c jpeg.c png.c bmp.c fb_display.c transforms.c
+SOURCES	= main.c jpeg.c gif.c png.c bmp.c fb_display.c transforms.c
 OBJECTS	= ${SOURCES:.c=.o}
 
 OUT	= fbv
+#LIBS	= -lungif -L/usr/X11R6/lib -ljpeg -lpng
 
 all: $(OUT)
 	@echo Build DONE.
 
-$(OUT): $(OBJECTS)
+$(OUT): $(OBJECTS) $(CONF)
 	$(CC) $(LDFLAGS) -o $(OUT) $(OBJECTS) $(LIBS)
+
+$(CONF):
+	$(error Please run ./configure first...)
 
 clean:
 	rm -f $(OBJECTS) *~ $$$$~* *.bak core config.log $(OUT)
 
 distclean: clean
-	@echo -e "error:\n\t@echo Please run ./configure first..." >Make.conf
-	rm -f $(OUT) config.h
+	rm -f $(OUT) $(CONF) config.h
 
 install: $(OUT)
-	cp $(OUT) $(bindir)
-	[ -d $(mandir)/man1 ] || mkdir -p $(mandir)/man1
-	gzip -9c $(OUT).1 > $(mandir)/man1/$(OUT).1.gz
+	cp $(OUT) $(DESTDIR)$(bindir)
+	gzip -9c $(OUT).1 > $(DESTDIR)$(mandir)/man1/$(OUT).1.gz
 
-uninstall: $(bindir)/$(OUT)
-	rm -f $(bindir)/$(OUT)
-	rm -f $(mandir)/man1/$(OUT).1.gz
-
+uninstall: $(DESTDIR)$(bindir)/$(OUT)
+	rm -f $(DESTDIR)$(bindir)/$(OUT)
+	rm -f $(DESTDIR)$(mandir)/man1/$(OUT).1.gz
