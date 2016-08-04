@@ -97,7 +97,7 @@ int fb_display(unsigned char *rgbbuff, unsigned char * alpha,
 	blit2FB(fh, fbbuff, alpha, x_size, y_size, x_stride, var.yres_virtual, x_pan, y_pan, x_offs, y_offs + var.yoffset, bp);
 #endif
 	free(fbbuff);
-
+	sleep(10);
 	/* close device */
 	closeFB(fh);
 	return 0;
