@@ -1,6 +1,5 @@
 #include "config.h"
 
-#include <linux/vt.h>
 #include <linux/fb.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -106,15 +105,7 @@ int getCurrentRes(int *x, int *y)
 
 static void fb_setvt(int vtno)
 {
-    struct vt_stat vts;
     char vtname[12];
-
-    if (vtno < 0) {
-        if (-1 == ioctl(tty,VT_OPENQRY, &vtno) || vtno == -1) {
-            perror("ioctl VT_OPENQRY");
-            exit(1);
-        }
-    }
 
     vtno &= 0xff;
     sprintf(vtname, "/dev/tty%d", vtno);
@@ -143,20 +134,6 @@ static void fb_setvt(int vtno)
     dup(0);
     dup(0);
 
-    if (-1 == ioctl(tty,VT_GETSTATE, &vts)) {
-        perror("ioctl VT_GETSTATE");
-        exit(1);
-    }
-    orig_vt_no = vts.v_active;
-    if (-1 == ioctl(tty,VT_ACTIVATE, vtno)) {
-        perror("ioctl VT_ACTIVATE");
-        exit(1);
-    }
-    if (-1 == ioctl(tty,VT_WAITACTIVE, vtno)) {
-        perror("ioctl VT_WAITACTIVE");
-        exit(1);
-    }
-
 }
 
 int openFB(const char *name)
@@ -164,7 +141,6 @@ int openFB(const char *name)
 	int fh;
 	char *dev;
 
-	struct vt_stat vts;
 
 	if(name == NULL)
 	{
@@ -174,12 +150,6 @@ int openFB(const char *name)
 	}
 
 	fb_setvt(0);
-
-	if (-1 == ioctl(tty,VT_GETSTATE, &vts)) {
-		fprintf(stderr,"ioctl VT_GETSTATE: %s (not a linux console?)\n",
-		strerror(errno));
-		exit(1);
-    }
 
 	if((fh = open(getenv("FRAMEBUFFER"), O_RDWR)) == -1)
 	{
