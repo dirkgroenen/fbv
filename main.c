@@ -18,7 +18,7 @@
 static int opt_clear = 1;
 static int opt_alpha = 0;
 static int opt_hide_cursor = 0;
-static int opt_image_info = 1;
+static int opt_image_info = 0;
 static int opt_stretch = 0;
 static int opt_delay = 0;
 static int opt_enlarge = 0;
